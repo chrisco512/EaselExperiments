@@ -16,7 +16,11 @@ var screen_width;
 var screen_height;
 var bmpAnimation;
 
+var numberOfImagesLoaded = 0;
+
 var imgMonsterARun = new Image();
+var imgMonsterAIdle = new Image();
+
 
 function init() {
     //find canvas and load images, wait for last image to load
@@ -25,6 +29,12 @@ function init() {
     imgMonsterARun.onload = handleImageLoad;
     imgMonsterARun.onerror = handleImageError;
     imgMonsterARun.src = "img/monster1_run.png";
+
+    imgMonsterAIdle.onload = handleImageLoad;
+    imgMonsterAIdle.onerror = handleImageError;
+    imgMonsterAIdle.src = "img/monster1_idle.png";
+
+
 }
 
 function reset() {
@@ -34,7 +44,12 @@ function reset() {
 }
 
 function handleImageLoad(e) {
-    startGame();
+    numberOfImagesLoaded++;
+
+    if (numberOfImagesLoaded == 2) {
+        numberOfImagesLoaded = 0;
+        startGame();
+    }
 }
 
 function startGame() {
@@ -57,13 +72,21 @@ function startGame() {
 	    }
     });
 
+    var spriteSheetIdle = new createjs.SpriteSheet({
+        images: [imgMonsterAIdle],
+        frames: { width: 64, height: 64, regX: 32, regY: 32 },
+        animations: {
+            idle: [0, 10, "idle", 4]
+        }
+    });
+
 	// to save file size, the loaded sprite sheet only includes left facing animations
 	// we could flip the display objects with scaleX=-1, but this is expensive in most browsers
 	// instead, we generate a new sprite sheet which includes the flipped animations
     createjs.SpriteSheetUtils.addFlippedFrames(spriteSheet, true, false, false);
 	
 	// create a BitmapSequence instance to display and play back the sprite sheet:
-	bmpAnimation = new createjs.BitmapAnimation(spriteSheet);
+    bmpAnimation = new createjs.BitmapAnimation(spriteSheet);
 	
 	// set the registration point (the point it will be positioned and rotated around)
 	// to the center of the frame dimensions:
@@ -84,6 +107,13 @@ function startGame() {
 	bmpAnimation.vX = 1;
 	bmpAnimation.x = 16;
 	bmpAnimation.y = 32;
+
+
+	bmpAnimationIdle = new createjs.BitmapAnimation(spriteSheetIdle);
+
+	bmpAnimationIdle.name = "monsteridle1";
+	bmpAnimationIdle.x = 16;
+	bmpAnimationIdle.y = 32;
 		
 	// have each monster start at a specific frame
 	bmpAnimation.currentFrame = 10;
@@ -114,7 +144,10 @@ function tick() {
         // We've reached the left side of our screen
         // We need to walk right now
         bmpAnimation.direction = 90;
-        bmpAnimation.gotoAndPlay("walk_h");
+        bmpAnimation.gotoAndStop("walk");
+        stage.removeChild(bmpAnimation);
+        bmpAnimationIdle.gotoAndPlay("idle");
+        stage.addChild(bmpAnimationIdle);
     }
 
     // Moving the sprite based on the direction & the speed
